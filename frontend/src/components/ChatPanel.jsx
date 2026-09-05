@@ -130,22 +130,26 @@ export default function ChatPanel() {
       try { data = await res.json(); } catch (_) {}
 
       if (!res.ok) {
-        throw new Error(data.detail || `Chat request failed (${res.status})`);
+        throw new Error(data.detail || `Server error (${res.status})`);
       }
 
       const aiMessage = { 
         id: Date.now() + 1, 
         role: 'ai', 
-        content: data.response || '',
+        content: data.response || 'No response received from the copilot.',
         sql: data.sql || null,
         rowCount: data.row_count || 0
       };
       setMessages(prev => [...prev, aiMessage]);
     } catch (err) {
+      const errorText = err.message.includes('Failed to fetch')
+        ? "Could not reach the Retail Copilot server. Please ensure the backend is running via `python app.py` on port 8000."
+        : `**Notice:** ${err.message}`;
+
       setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
         role: 'ai', 
-        content: "ERROR: " + err.message,
+        content: errorText,
         sql: null,
         rowCount: 0 
       }]);

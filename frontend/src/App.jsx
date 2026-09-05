@@ -25,11 +25,22 @@ function App() {
     setError(null);
     try {
       const res = await fetch('/api/morning-briefing');
-      if (!res.ok) throw new Error('Briefing request failed');
+      if (!res.ok) {
+        let msg = `Briefing request failed (${res.status})`;
+        try {
+          const errData = await res.json();
+          if (errData.detail) msg = errData.detail;
+        } catch (_) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
-      setBriefing(data);
+      setBriefing({
+        stockout_risks: Array.isArray(data.stockout_risks) ? data.stockout_risks : [],
+        dead_stock: Array.isArray(data.dead_stock) ? data.dead_stock : [],
+        sales_anomalies: Array.isArray(data.sales_anomalies) ? data.sales_anomalies : [],
+      });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Unable to connect to the backend server. Please verify python app.py is running.');
     } finally {
       setLoading(false);
     }
@@ -40,14 +51,16 @@ function App() {
   }, []);
 
   const filteredStockouts = useMemo(() => {
-    if (selectedStore === 'ALL') return briefing.stockout_risks;
-    return briefing.stockout_risks.filter(item => item.store_id === selectedStore);
-  }, [briefing.stockout_risks, selectedStore]);
+    const list = briefing?.stockout_risks || [];
+    if (selectedStore === 'ALL') return list;
+    return list.filter(item => item.store_id === selectedStore);
+  }, [briefing?.stockout_risks, selectedStore]);
 
   const filteredDeadStock = useMemo(() => {
-    if (selectedStore === 'ALL') return briefing.dead_stock;
-    return briefing.dead_stock.filter(item => item.store_id === selectedStore);
-  }, [briefing.dead_stock, selectedStore]);
+    const list = briefing?.dead_stock || [];
+    if (selectedStore === 'ALL') return list;
+    return list.filter(item => item.store_id === selectedStore);
+  }, [briefing?.dead_stock, selectedStore]);
 
   return (
     <div className="min-h-screen bg-background text-text font-sans selection:bg-primary-light selection:text-primary">

@@ -70,13 +70,16 @@ def chat(payload: ChatRequest) -> dict:
 
     try:
         agent = get_agent()
-    except ValueError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    result = agent.ask(message)
-    if isinstance(result, dict):
-        return result
-    return {"response": result}
+        result = agent.ask(message)
+        if isinstance(result, dict):
+            return result
+        return {"response": result, "sql": None, "row_count": 0}
+    except Exception as exc:
+        return {
+            "response": f"The copilot encountered an issue: {exc}. Please verify your network connection and try again.",
+            "sql": None,
+            "row_count": 0,
+        }
 
 
 @app.get("/")
